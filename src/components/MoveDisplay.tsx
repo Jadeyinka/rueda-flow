@@ -1,12 +1,15 @@
 import { RuedaMove } from "@/data/ruedaMoves";
 import { motion, AnimatePresence } from "framer-motion";
+import { BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MoveDisplayProps {
   currentMove: RuedaMove | null;
   isPlaying: boolean;
+  onOpenTutorial: (move: RuedaMove) => void;
 }
 
-const MoveDisplay = ({ currentMove, isPlaying }: MoveDisplayProps) => {
+const MoveDisplay = ({ currentMove, isPlaying, onOpenTutorial }: MoveDisplayProps) => {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[300px] md:min-h-[400px]">
       {/* Background glow effect */}
@@ -39,7 +42,7 @@ const MoveDisplay = ({ currentMove, isPlaying }: MoveDisplayProps) => {
               initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3 }}
-              className="mt-4"
+              className="mt-4 flex flex-col items-center gap-3"
             >
               <span className={`
                 inline-block px-4 py-1.5 rounded-full text-sm font-medium uppercase tracking-wider
@@ -49,6 +52,25 @@ const MoveDisplay = ({ currentMove, isPlaying }: MoveDisplayProps) => {
               `}>
                 {currentMove.difficulty}
               </span>
+              
+              {/* Tutorial button */}
+              {currentMove.tutorial && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onOpenTutorial(currentMove)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    How to do this move
+                  </Button>
+                </motion.div>
+              )}
             </motion.div>
           </motion.div>
         ) : (
