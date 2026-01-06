@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { RuedaMove, ruedaMoves, getRandomMove } from "@/data/ruedaMoves";
+import { useSmoothVoice } from "./useSmoothVoice";
+import { useBPMDetector } from "./useBPMDetector";
 
 export const useRuedaCaller = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -10,36 +12,33 @@ export const useRuedaCaller = () => {
     new Set(ruedaMoves.map(m => m.name))
   );
   const [progress, setProgress] = useState(0);
+  const [syncToMusic, setSyncToMusic] = useState(false);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  // Use smooth voice hook
+  const { speak, stop: stopSpeech } = useSmoothVoice();
+  
+  // Use BPM detector hook
+  const bpmDetector = useBPMDetector();
 
   const getActiveMoves = useCallback(() => {
     return ruedaMoves.filter(m => selectedMoves.has(m.name));
   }, [selectedMoves]);
 
   const speakMove = useCallback((move: RuedaMove) => {
-    if (isMuted || !window.speechSynthesis) return;
-    
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(move.name);
-    utterance.rate = 0.9;
-    utterance.pitch = 1;
-    utterance.volume = 1;
-    
-    // Try to use a Spanish voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const spanishVoice = voices.find(v => v.lang.startsWith('es'));
-    if (spanishVoice) {
-      utterance.voice = spanishVoice;
+    if (isMuted) return;
+    speak(move.name, { rate: 0.85, pitch: 1.0 });
+  }, [isMuted, speak]);
+
+  // Calculate effective tempo (considering BPM sync)
+  const getEffectiveTempo = useCallback(() => {
+    if (syncToMusic && bpmDetector.bpm) {
+      return bpmDetector.getIntervalFromBPM(bpmDetector.bpm, 8);
     }
-    
-    speechRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  }, [isMuted]);
+    return tempo;
+  }, [syncToMusic, bpmDetector, tempo]);
 
   const callNextMove = useCallback(() => {
     const activeMoves = getActiveMoves();
@@ -57,19 +56,21 @@ export const useRuedaCaller = () => {
     setIsPlaying(true);
     callNextMove();
     
+    const effectiveTempo = getEffectiveTempo();
+    
     // Set up interval for next moves
     intervalRef.current = setInterval(() => {
       callNextMove();
-    }, tempo * 1000);
+    }, effectiveTempo * 1000);
 
     // Set up progress updates
     progressRef.current = setInterval(() => {
       setProgress(prev => {
-        const increment = 100 / (tempo * 10); // Update 10 times per second
+        const increment = 100 / (effectiveTempo * 10);
         return Math.min(prev + increment, 100);
       });
     }, 100);
-  }, [tempo, callNextMove, getActiveMoves]);
+  }, [getEffectiveTempo, callNextMove, getActiveMoves]);
 
   const stopCalling = useCallback(() => {
     setIsPlaying(false);
@@ -81,9 +82,9 @@ export const useRuedaCaller = () => {
       clearInterval(progressRef.current);
       progressRef.current = null;
     }
-    window.speechSynthesis?.cancel();
+    stopSpeech();
     setProgress(0);
-  }, []);
+  }, [stopSpeech]);
 
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -99,6 +100,8 @@ export const useRuedaCaller = () => {
       return;
     }
     
+    const effectiveTempo = getEffectiveTempo();
+    
     // Reset the interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -111,15 +114,15 @@ export const useRuedaCaller = () => {
     
     intervalRef.current = setInterval(() => {
       callNextMove();
-    }, tempo * 1000);
+    }, effectiveTempo * 1000);
 
     progressRef.current = setInterval(() => {
       setProgress(prev => {
-        const increment = 100 / (tempo * 10);
+        const increment = 100 / (effectiveTempo * 10);
         return Math.min(prev + increment, 100);
       });
     }, 100);
-  }, [isPlaying, callNextMove, tempo]);
+  }, [isPlaying, callNextMove, getEffectiveTempo]);
 
   const toggleMove = useCallback((moveName: string) => {
     setSelectedMoves(prev => {
@@ -146,33 +149,30 @@ export const useRuedaCaller = () => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (progressRef.current) clearInterval(progressRef.current);
-      window.speechSynthesis?.cancel();
+      stopSpeech();
     };
-  }, []);
+  }, [stopSpeech]);
 
-  // Restart interval when tempo changes while playing
+  // Restart interval when tempo or sync changes while playing
   useEffect(() => {
     if (isPlaying) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (progressRef.current) clearInterval(progressRef.current);
       
+      const effectiveTempo = getEffectiveTempo();
+      
       intervalRef.current = setInterval(() => {
         callNextMove();
-      }, tempo * 1000);
+      }, effectiveTempo * 1000);
 
       progressRef.current = setInterval(() => {
         setProgress(prev => {
-          const increment = 100 / (tempo * 10);
+          const increment = 100 / (effectiveTempo * 10);
           return Math.min(prev + increment, 100);
         });
       }, 100);
     }
-  }, [tempo, isPlaying, callNextMove]);
-
-  // Load voices
-  useEffect(() => {
-    window.speechSynthesis?.getVoices();
-  }, []);
+  }, [tempo, syncToMusic, bpmDetector.bpm, isPlaying, callNextMove, getEffectiveTempo]);
 
   return {
     isPlaying,
@@ -189,5 +189,10 @@ export const useRuedaCaller = () => {
     selectAllMoves,
     selectNoMoves,
     allMoves: ruedaMoves,
+    // Music/BPM features
+    bpmDetector,
+    syncToMusic,
+    setSyncToMusic,
+    getEffectiveTempo,
   };
 };
