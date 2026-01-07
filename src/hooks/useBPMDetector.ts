@@ -109,8 +109,18 @@ export const useBPMDetector = () => {
       // Create audio element for playback
       const audio = new Audio();
       audio.src = URL.createObjectURL(file);
-      audio.loop = true;
+      audio.loop = false; // Don't loop - stop when finished
       audioElementRef.current = audio;
+      
+      // Listen for audio ending
+      audio.addEventListener('ended', () => {
+        setState(prev => ({ ...prev, isPlaying: false }));
+      });
+      
+      // Listen for pause
+      audio.addEventListener('pause', () => {
+        setState(prev => ({ ...prev, isPlaying: false }));
+      });
       
       // Wait for audio to load
       await new Promise((resolve, reject) => {
@@ -154,7 +164,7 @@ export const useBPMDetector = () => {
       setState(prev => ({ ...prev, isAnalyzing: false }));
       return null;
     }
-  }, [detectBPM]);
+  }, [detectBPM, state.volume]);
 
   const playMusic = useCallback(() => {
     if (audioElementRef.current && audioContextRef.current) {
