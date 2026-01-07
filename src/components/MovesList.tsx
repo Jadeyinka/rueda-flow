@@ -46,7 +46,7 @@ const MovesList = ({
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 h-[720px] overflow-y-auto scrollbar-thin">
         <MoveCategory
           title="Beginner"
           moves={beginnerMoves}
