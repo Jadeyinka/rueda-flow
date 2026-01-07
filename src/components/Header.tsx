@@ -8,7 +8,7 @@ const Header = () => {
       transition={{ duration: 0.5 }}
       className="text-center py-8"
     >
-      <h1 className="font-display text-5xl md:text-7xl tracking-wider bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+      <h1 className="font-display text-4xl md:text-6xl tracking-wider bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
         RuedaFlow
       </h1>
       <p className="text-muted-foreground mt-2 text-lg">
