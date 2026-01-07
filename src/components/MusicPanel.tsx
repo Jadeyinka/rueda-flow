@@ -1,4 +1,4 @@
-import { Music, Upload, Play, Pause, Gauge } from "lucide-react";
+import { Music, Upload, Play, Pause, Gauge, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useRef, useState } from "react";
@@ -9,9 +9,11 @@ interface MusicPanelProps {
   isPlaying: boolean;
   isAnalyzing: boolean;
   audioLoaded: boolean;
+  volume: number;
   onFileSelect: (file: File) => void;
   onToggleMusic: () => void;
   onBPMChange: (bpm: number) => void;
+  onVolumeChange: (volume: number) => void;
   syncEnabled: boolean;
   onSyncToggle: () => void;
 }
@@ -21,9 +23,11 @@ const MusicPanel = ({
   isPlaying,
   isAnalyzing,
   audioLoaded,
+  volume,
   onFileSelect,
   onToggleMusic,
   onBPMChange,
+  onVolumeChange,
   syncEnabled,
   onSyncToggle,
 }: MusicPanelProps) => {
@@ -45,12 +49,12 @@ const MusicPanel = ({
         Background Music
       </h3>
 
-      {/* File upload */}
+      {/* File upload - accepts all audio formats */}
       <div className="space-y-4">
         <input
           ref={fileInputRef}
           type="file"
-          accept="audio/*"
+          accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.wma,.aiff,.opus,.webm"
           onChange={handleFileChange}
           className="hidden"
         />
@@ -101,6 +105,28 @@ const MusicPanel = ({
                 </>
               )}
             </Button>
+
+            {/* Volume control */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Volume2 className="w-4 h-4" />
+                  Music Volume
+                </span>
+                <span className="text-sm text-primary font-medium">{Math.round(volume * 100)}%</span>
+              </div>
+              <Slider
+                value={[volume]}
+                onValueChange={(value) => onVolumeChange(value[0])}
+                min={0}
+                max={1}
+                step={0.05}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground text-center">
+                Lower volume to hear voice calls clearly
+              </p>
+            </div>
           </motion.div>
         )}
 

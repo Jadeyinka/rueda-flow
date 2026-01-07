@@ -5,6 +5,7 @@ interface BPMState {
   isAnalyzing: boolean;
   isPlaying: boolean;
   audioLoaded: boolean;
+  volume: number;
 }
 
 export const useBPMDetector = () => {
@@ -13,12 +14,14 @@ export const useBPMDetector = () => {
     isAnalyzing: false,
     isPlaying: false,
     audioLoaded: false,
+    volume: 0.3, // Lower default volume so voice calls are audible
   });
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const gainNodeRef = useRef<GainNode | null>(null);
   const animationRef = useRef<number | null>(null);
 
   // Clean up on unmount
@@ -115,13 +118,18 @@ export const useBPMDetector = () => {
         audio.onerror = reject;
       });
       
-      // Create source and analyser for visualization
+      // Create source, gain node and analyser for visualization
       if (!sourceNodeRef.current) {
         sourceNodeRef.current = audioContext.createMediaElementSource(audio);
         analyserRef.current = audioContext.createAnalyser();
         analyserRef.current.fftSize = 256;
         
-        sourceNodeRef.current.connect(analyserRef.current);
+        // Create gain node for volume control
+        gainNodeRef.current = audioContext.createGain();
+        gainNodeRef.current.gain.value = state.volume;
+        
+        sourceNodeRef.current.connect(gainNodeRef.current);
+        gainNodeRef.current.connect(analyserRef.current);
         analyserRef.current.connect(audioContext.destination);
       }
       
@@ -132,12 +140,13 @@ export const useBPMDetector = () => {
       
       const detectedBPM = detectBPM(audioBuffer);
       
-      setState({
+      setState(prev => ({
+        ...prev,
         bpm: detectedBPM,
         isAnalyzing: false,
         isPlaying: false,
         audioLoaded: true,
-      });
+      }));
       
       return detectedBPM;
     } catch (error) {
@@ -177,6 +186,13 @@ export const useBPMDetector = () => {
     setState(prev => ({ ...prev, bpm }));
   }, []);
 
+  const setVolume = useCallback((volume: number) => {
+    setState(prev => ({ ...prev, volume }));
+    if (gainNodeRef.current) {
+      gainNodeRef.current.gain.value = volume;
+    }
+  }, []);
+
   const getAnalyserData = useCallback((): Uint8Array | null => {
     if (!analyserRef.current) return null;
     const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -199,6 +215,7 @@ export const useBPMDetector = () => {
     pauseMusic,
     toggleMusic,
     setBPM,
+    setVolume,
     getAnalyserData,
     getIntervalFromBPM,
     analyser: analyserRef.current,

@@ -11,7 +11,7 @@ interface MoveDisplayProps {
 
 const MoveDisplay = ({ currentMove, isPlaying, onOpenTutorial }: MoveDisplayProps) => {
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[300px] md:min-h-[400px]">
+    <div className="relative flex flex-col items-center justify-center min-h-[200px] md:min-h-[280px] py-4">
       {/* Background glow effect */}
       <div className="absolute inset-0 radial-glow opacity-60" />
       
@@ -23,9 +23,9 @@ const MoveDisplay = ({ currentMove, isPlaying, onOpenTutorial }: MoveDisplayProp
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: -20 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="text-center z-10"
+            className="text-center z-10 px-4"
           >
-            <h2 className="move-display mb-4">
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-wider font-display bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-3">
               {currentMove.name}
             </h2>
             {currentMove.description && (
