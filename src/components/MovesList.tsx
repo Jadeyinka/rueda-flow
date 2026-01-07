@@ -120,10 +120,10 @@ const MoveCategory = ({ title, moves, selectedMoves, onToggleMove, onOpenTutoria
                   }
                 `}
               >
+                <span className="mr-0.5">{move.name}</span>
                 {isSelected && (
                   <Check className="absolute top-1/2 -translate-y-1/2 right-6 h-3 w-3" />
                 )}
-                {move.name}
               </motion.button>
               
               {/* Tutorial button */}
