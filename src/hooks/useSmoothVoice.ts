@@ -11,27 +11,35 @@ export const useSmoothVoice = () => {
       const availableVoices = window.speechSynthesis?.getVoices() || [];
       setVoices(availableVoices);
       
-      // Prioritize smooth, natural-sounding voices
-      // Spanish voices first, then look for high-quality English voices
-      const preferredVoices = [
-        // Spanish voices (for authentic Cuban Rueda calls)
-        ...availableVoices.filter(v => v.lang.startsWith('es')),
-        // Premium English voices (often smoother)
-        ...availableVoices.filter(v => 
-          v.name.includes('Premium') || 
-          v.name.includes('Enhanced') ||
-          v.name.includes('Natural') ||
-          v.name.includes('Neural')
-        ),
-        // Google voices tend to be smoother
-        ...availableVoices.filter(v => v.name.includes('Google')),
-        // Microsoft voices
-        ...availableVoices.filter(v => v.name.includes('Microsoft')),
-      ];
+      // Prioritize Spanish/Cuban voices for authentic Rueda calls
+      // Order: Cuban Spanish > Latin American Spanish > Spain Spanish > Other Spanish
+      const spanishVoices = availableVoices.filter(v => v.lang.startsWith('es'));
+      
+      // Prefer Latin American Spanish variants (closer to Cuban accent)
+      const latinAmericanVoices = spanishVoices.filter(v => 
+        v.lang.includes('MX') || // Mexico
+        v.lang.includes('CU') || // Cuba
+        v.lang.includes('CO') || // Colombia
+        v.lang.includes('AR') || // Argentina
+        v.lang.includes('VE') || // Venezuela
+        v.lang.includes('419')   // Latin America generic
+      );
+      
+      // Prefer natural/neural voices for smoother sound
+      const naturalVoices = spanishVoices.filter(v =>
+        v.name.toLowerCase().includes('natural') ||
+        v.name.toLowerCase().includes('neural') ||
+        v.name.toLowerCase().includes('premium') ||
+        v.name.includes('Google') ||
+        v.name.includes('Microsoft')
+      );
 
-      // Pick the first preferred voice or fall back to any available
-      const bestVoice = preferredVoices[0] || availableVoices[0] || null;
+      // Pick the best available Spanish voice
+      const bestVoice = latinAmericanVoices[0] || naturalVoices[0] || spanishVoices[0] || availableVoices[0] || null;
       setSelectedVoice(bestVoice);
+      
+      console.log('Available Spanish voices:', spanishVoices.map(v => `${v.name} (${v.lang})`));
+      console.log('Selected voice:', bestVoice?.name, bestVoice?.lang);
     };
 
     loadVoices();
@@ -56,10 +64,11 @@ export const useSmoothVoice = () => {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // Apply smooth voice settings
-    utterance.rate = options?.rate ?? 0.85; // Slower for clarity
-    utterance.pitch = options?.pitch ?? 1.0; // Natural pitch
-    utterance.volume = options?.volume ?? 1.0;
+    // Apply natural Cuban/Spanish voice settings
+    // Slightly slower rate for clarity, natural pitch, LOUD volume
+    utterance.rate = options?.rate ?? 0.9; // Natural speaking pace
+    utterance.pitch = options?.pitch ?? 1.1; // Slightly higher for energy
+    utterance.volume = options?.volume ?? 1.0; // Maximum volume
     
     if (selectedVoice) {
       utterance.voice = selectedVoice;

@@ -144,6 +144,13 @@ export const useRuedaCaller = () => {
     setSelectedMoves(new Set());
   }, []);
 
+  // Stop caller when music is paused
+  useEffect(() => {
+    if (!bpmDetector.isPlaying && syncToMusic && isPlaying) {
+      stopCalling();
+    }
+  }, [bpmDetector.isPlaying, syncToMusic, isPlaying, stopCalling]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
