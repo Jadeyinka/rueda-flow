@@ -111,19 +111,19 @@ const MoveCategory = ({ title, moves, selectedMoves, onToggleMove, onOpenTutoria
               <motion.button
                 onClick={() => onToggleMove(move.name)}
                 whileTap={{ scale: 0.95 }}
-                className={`
+              className={`
                   relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
-                  border pr-8
+                  border pr-9
                   ${isSelected 
                     ? colorClasses[color]
                     : 'bg-muted/50 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
                   }
                 `}
               >
-                {isSelected && (
-                  <Check className="absolute top-1/2 -translate-y-1/2 right-6 h-3 w-3" />
-                )}
                 {move.name}
+                {isSelected && (
+                  <Check className="ml-1 inline-block h-3 w-3" />
+                )}
               </motion.button>
               
               {/* Tutorial button */}
