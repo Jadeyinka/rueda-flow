@@ -51,13 +51,13 @@ const Index = () => {
       <div className="relative z-10 container mx-auto px-4 pb-8">
         <Header />
         
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
+        <div className="grid lg:grid-cols-3 gap-6 items-start">
           {/* Left column - Moves list */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="order-2 lg:order-1"
+            className="order-2 lg:order-1 max-h-[calc(100vh-200px)] overflow-hidden"
           >
             <MovesList
               moves={allMoves}
@@ -76,7 +76,7 @@ const Index = () => {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="order-1 lg:order-2 lg:col-span-1 flex flex-col items-center"
           >
-            <div className="relative w-full">
+            <div className="relative w-full flex-shrink-0">
               <ProgressRing progress={progress / 100} isPlaying={isPlaying} />
               <MoveDisplay 
                 currentMove={currentMove} 
@@ -117,7 +117,7 @@ const Index = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="order-3 space-y-4"
+            className="order-3 space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto"
           >
             {/* Music Panel */}
             <MusicPanel
@@ -125,9 +125,11 @@ const Index = () => {
               isPlaying={bpmDetector.isPlaying}
               isAnalyzing={bpmDetector.isAnalyzing}
               audioLoaded={bpmDetector.audioLoaded}
+              volume={bpmDetector.volume}
               onFileSelect={bpmDetector.loadAudio}
               onToggleMusic={bpmDetector.toggleMusic}
               onBPMChange={bpmDetector.setBPM}
+              onVolumeChange={bpmDetector.setVolume}
               syncEnabled={syncToMusic}
               onSyncToggle={() => setSyncToMusic(!syncToMusic)}
             />
