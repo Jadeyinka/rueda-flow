@@ -112,13 +112,22 @@ export const useBPMDetector = () => {
       audio.loop = false; // Don't loop - stop when finished
       audioElementRef.current = audio;
       
-      // Listen for audio ending
+      // Use actual audio events as source of truth for isPlaying state
+      // This ensures consistent behavior across mobile and desktop
+      audio.addEventListener('playing', () => {
+        setState(prev => ({ ...prev, isPlaying: true }));
+      });
+      
+      audio.addEventListener('pause', () => {
+        setState(prev => ({ ...prev, isPlaying: false }));
+      });
+      
       audio.addEventListener('ended', () => {
         setState(prev => ({ ...prev, isPlaying: false }));
       });
       
-      // Listen for pause
-      audio.addEventListener('pause', () => {
+      // Handle errors (mobile autoplay restrictions, etc.)
+      audio.addEventListener('error', () => {
         setState(prev => ({ ...prev, isPlaying: false }));
       });
       
@@ -166,21 +175,28 @@ export const useBPMDetector = () => {
     }
   }, [detectBPM, state.volume]);
 
-  const playMusic = useCallback(() => {
+  const playMusic = useCallback(async () => {
     if (audioElementRef.current && audioContextRef.current) {
       // Resume audio context if suspended (browser autoplay policy)
       if (audioContextRef.current.state === 'suspended') {
-        audioContextRef.current.resume();
+        await audioContextRef.current.resume();
       }
-      audioElementRef.current.play();
-      setState(prev => ({ ...prev, isPlaying: true }));
+      try {
+        // Don't set state here - let the 'playing' event handle it
+        // This ensures state only updates when audio actually starts
+        await audioElementRef.current.play();
+      } catch (error) {
+        // Handle autoplay restrictions on mobile
+        console.warn('Audio play failed:', error);
+        setState(prev => ({ ...prev, isPlaying: false }));
+      }
     }
   }, []);
 
   const pauseMusic = useCallback(() => {
     if (audioElementRef.current) {
+      // Don't set state here - let the 'pause' event handle it
       audioElementRef.current.pause();
-      setState(prev => ({ ...prev, isPlaying: false }));
     }
   }, []);
 

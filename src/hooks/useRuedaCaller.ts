@@ -144,12 +144,19 @@ export const useRuedaCaller = () => {
     setSelectedMoves(new Set());
   }, []);
 
-  // Stop caller when music is paused
+  // Unified caller lifecycle: tie to actual audio playing state
+  // Start caller when music starts, stop when music stops/pauses/ends
   useEffect(() => {
-    if (!bpmDetector.isPlaying && syncToMusic && isPlaying) {
-      stopCalling();
+    if (syncToMusic) {
+      if (bpmDetector.isPlaying && !isPlaying) {
+        // Audio started playing - start the caller
+        startCalling();
+      } else if (!bpmDetector.isPlaying && isPlaying) {
+        // Audio stopped/paused/ended - stop the caller
+        stopCalling();
+      }
     }
-  }, [bpmDetector.isPlaying, syncToMusic, isPlaying, stopCalling]);
+  }, [bpmDetector.isPlaying, syncToMusic, isPlaying, startCalling, stopCalling]);
 
   // Cleanup on unmount
   useEffect(() => {
