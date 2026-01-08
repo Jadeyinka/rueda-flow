@@ -16,6 +16,10 @@ export const useRuedaCaller = () => {
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Refs to avoid stale closures in effects
+  const startCallingRef = useRef<() => void>(() => {});
+  const stopCallingRef = useRef<() => void>(() => {});
 
   // Use smooth voice hook
   const { speak, stop: stopSpeech } = useSmoothVoice();
@@ -86,6 +90,12 @@ export const useRuedaCaller = () => {
     setProgress(0);
   }, [stopSpeech]);
 
+  // Keep refs updated to avoid stale closures
+  useEffect(() => {
+    startCallingRef.current = startCalling;
+    stopCallingRef.current = stopCalling;
+  }, [startCalling, stopCalling]);
+
   const togglePlayPause = useCallback(() => {
     if (isPlaying) {
       stopCalling();
@@ -144,19 +154,26 @@ export const useRuedaCaller = () => {
     setSelectedMoves(new Set());
   }, []);
 
+  // Auto-enable sync when music is loaded with detected BPM
+  useEffect(() => {
+    if (bpmDetector.audioLoaded && bpmDetector.bpm) {
+      setSyncToMusic(true);
+    }
+  }, [bpmDetector.audioLoaded, bpmDetector.bpm]);
+
   // Unified caller lifecycle: tie to actual audio playing state
   // Start caller when music starts, stop when music stops/pauses/ends
   useEffect(() => {
-    if (syncToMusic) {
-      if (bpmDetector.isPlaying && !isPlaying) {
-        // Audio started playing - start the caller
-        startCalling();
-      } else if (!bpmDetector.isPlaying && isPlaying) {
-        // Audio stopped/paused/ended - stop the caller
-        stopCalling();
-      }
+    if (!syncToMusic) return;
+    
+    if (bpmDetector.isPlaying && !isPlaying) {
+      // Audio started playing - start the caller
+      startCallingRef.current();
+    } else if (!bpmDetector.isPlaying && isPlaying) {
+      // Audio stopped/paused/ended - stop the caller immediately
+      stopCallingRef.current();
     }
-  }, [bpmDetector.isPlaying, syncToMusic, isPlaying, startCalling, stopCalling]);
+  }, [bpmDetector.isPlaying, syncToMusic, isPlaying]);
 
   // Cleanup on unmount
   useEffect(() => {
