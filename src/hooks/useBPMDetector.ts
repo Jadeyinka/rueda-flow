@@ -95,10 +95,47 @@ export const useBPMDetector = () => {
     return Math.round(adjustedBPM);
   }, []);
 
-  const loadAudio = useCallback(async (file: File) => {
+  // Clean up previous audio resources before loading new audio
+  const cleanupAudio = useCallback(() => {
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.src = '';
+      audioElementRef.current = null;
+    }
+    if (sourceNodeRef.current) {
+      try {
+        sourceNodeRef.current.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      sourceNodeRef.current = null;
+    }
+    if (gainNodeRef.current) {
+      try {
+        gainNodeRef.current.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      gainNodeRef.current = null;
+    }
+    if (analyserRef.current) {
+      try {
+        analyserRef.current.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+      analyserRef.current = null;
+    }
+  }, []);
+
+  // Shared audio setup logic
+  const setupAudio = useCallback(async (audioSrc: string, precomputedBpm?: number) => {
     setState(prev => ({ ...prev, isAnalyzing: true }));
     
     try {
+      // Clean up previous audio
+      cleanupAudio();
+      
       // Create audio context if not exists
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext();
@@ -108,12 +145,12 @@ export const useBPMDetector = () => {
       
       // Create audio element for playback
       const audio = new Audio();
-      audio.src = URL.createObjectURL(file);
-      audio.loop = false; // Don't loop - stop when finished
+      audio.crossOrigin = 'anonymous'; // Required for CORS audio from storage
+      audio.src = audioSrc;
+      audio.loop = false;
       audioElementRef.current = audio;
       
       // Use actual audio events as source of truth for isPlaying state
-      // This ensures consistent behavior across mobile and desktop
       audio.addEventListener('playing', () => {
         setState(prev => ({ ...prev, isPlaying: true }));
       });
@@ -126,7 +163,6 @@ export const useBPMDetector = () => {
         setState(prev => ({ ...prev, isPlaying: false }));
       });
       
-      // Handle errors (mobile autoplay restrictions, etc.)
       audio.addEventListener('error', () => {
         setState(prev => ({ ...prev, isPlaying: false }));
       });
@@ -138,26 +174,29 @@ export const useBPMDetector = () => {
       });
       
       // Create source, gain node and analyser for visualization
-      if (!sourceNodeRef.current) {
-        sourceNodeRef.current = audioContext.createMediaElementSource(audio);
-        analyserRef.current = audioContext.createAnalyser();
-        analyserRef.current.fftSize = 256;
-        
-        // Create gain node for volume control
-        gainNodeRef.current = audioContext.createGain();
-        gainNodeRef.current.gain.value = state.volume;
-        
-        sourceNodeRef.current.connect(gainNodeRef.current);
-        gainNodeRef.current.connect(analyserRef.current);
-        analyserRef.current.connect(audioContext.destination);
+      sourceNodeRef.current = audioContext.createMediaElementSource(audio);
+      analyserRef.current = audioContext.createAnalyser();
+      analyserRef.current.fftSize = 256;
+      
+      gainNodeRef.current = audioContext.createGain();
+      gainNodeRef.current.gain.value = state.volume;
+      
+      sourceNodeRef.current.connect(gainNodeRef.current);
+      gainNodeRef.current.connect(analyserRef.current);
+      analyserRef.current.connect(audioContext.destination);
+      
+      let detectedBPM: number;
+      
+      if (precomputedBpm) {
+        // Use pre-computed BPM for faster loading
+        detectedBPM = precomputedBpm;
+      } else {
+        // Analyze audio for BPM
+        const response = await fetch(audioSrc);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        detectedBPM = detectBPM(audioBuffer);
       }
-      
-      // Analyze a portion of the audio for BPM
-      const response = await fetch(audio.src);
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
-      const detectedBPM = detectBPM(audioBuffer);
       
       setState(prev => ({
         ...prev,
@@ -173,7 +212,16 @@ export const useBPMDetector = () => {
       setState(prev => ({ ...prev, isAnalyzing: false }));
       return null;
     }
-  }, [detectBPM, state.volume]);
+  }, [detectBPM, state.volume, cleanupAudio]);
+
+  const loadAudio = useCallback(async (file: File) => {
+    const audioSrc = URL.createObjectURL(file);
+    return setupAudio(audioSrc);
+  }, [setupAudio]);
+
+  const loadAudioFromUrl = useCallback(async (url: string, precomputedBpm?: number) => {
+    return setupAudio(url, precomputedBpm);
+  }, [setupAudio]);
 
   const playMusic = useCallback(async () => {
     if (audioElementRef.current && audioContextRef.current) {
@@ -237,6 +285,7 @@ export const useBPMDetector = () => {
   return {
     ...state,
     loadAudio,
+    loadAudioFromUrl,
     playMusic,
     pauseMusic,
     toggleMusic,

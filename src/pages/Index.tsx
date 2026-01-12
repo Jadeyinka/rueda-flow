@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import Header from "@/components/Header";
 import MoveDisplay from "@/components/MoveDisplay";
@@ -10,6 +10,8 @@ import AudioVisualizer from "@/components/AudioVisualizer";
 import TutorialModal from "@/components/TutorialModal";
 import { useRuedaCaller } from "@/hooks/useRuedaCaller";
 import { RuedaMove } from "@/data/ruedaMoves";
+import { SALSA_TRACKS, SalsaTrack } from "@/data/salsaTracks";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const {
@@ -34,10 +36,24 @@ const Index = () => {
   } = useRuedaCaller();
 
   const [tutorialMove, setTutorialMove] = useState<RuedaMove | null>(null);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | undefined>();
 
   const handleOpenTutorial = (move: RuedaMove) => {
     setTutorialMove(move);
   };
+
+  const handleTrackSelect = useCallback(async (track: SalsaTrack) => {
+    setSelectedTrackId(track.id);
+    
+    // Get public URL from storage
+    const { data } = supabase.storage
+      .from('tracks')
+      .getPublicUrl(track.storagePath);
+    
+    if (data?.publicUrl) {
+      await bpmDetector.loadAudioFromUrl(data.publicUrl, track.bpm);
+    }
+  }, [bpmDetector]);
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
@@ -116,6 +132,9 @@ const Index = () => {
               onVolumeChange={bpmDetector.setVolume}
               syncEnabled={syncToMusic}
               onSyncToggle={() => setSyncToMusic(!syncToMusic)}
+              tracks={SALSA_TRACKS}
+              onTrackSelect={handleTrackSelect}
+              selectedTrackId={selectedTrackId}
             />
 
             {/* Session Stats - inline on mobile */}
