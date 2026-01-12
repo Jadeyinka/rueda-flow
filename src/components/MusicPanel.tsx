@@ -1,8 +1,16 @@
 import { Music, Upload, Play, Pause, Gauge, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { SalsaTrack } from "@/data/salsaTracks";
 
 interface MusicPanelProps {
   bpm: number | null;
@@ -16,6 +24,9 @@ interface MusicPanelProps {
   onVolumeChange: (volume: number) => void;
   syncEnabled: boolean;
   onSyncToggle: () => void;
+  tracks: SalsaTrack[];
+  onTrackSelect: (track: SalsaTrack) => void;
+  selectedTrackId?: string;
 }
 
 const MusicPanel = ({
@@ -30,6 +41,9 @@ const MusicPanel = ({
   onVolumeChange,
   syncEnabled,
   onSyncToggle,
+  tracks,
+  onTrackSelect,
+  selectedTrackId,
 }: MusicPanelProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -42,6 +56,14 @@ const MusicPanel = ({
     }
   };
 
+  const handleTrackChange = (trackId: string) => {
+    const track = tracks.find(t => t.id === trackId);
+    if (track) {
+      setFileName(null); // Clear custom file name when selecting a track
+      onTrackSelect(track);
+    }
+  };
+
   return (
     <div className="glass-card rounded-2xl p-6">
       <h3 className="font-display text-xl tracking-wider text-foreground mb-4 flex items-center gap-2">
@@ -49,8 +71,46 @@ const MusicPanel = ({
         Background Music
       </h3>
 
-      {/* File upload - accepts all audio formats */}
       <div className="space-y-4">
+        {/* Pre-loaded track selector */}
+        {tracks.length > 0 && (
+          <div className="space-y-2">
+            <Select
+              value={selectedTrackId || ""}
+              onValueChange={handleTrackChange}
+              disabled={isAnalyzing}
+            >
+              <SelectTrigger className="w-full bg-background">
+                <SelectValue placeholder="Select a salsa track..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover">
+                {tracks.map((track) => (
+                  <SelectItem key={track.id} value={track.id}>
+                    <div className="flex items-center justify-between w-full gap-2">
+                      <span>{track.name}</span>
+                      {track.bpm && (
+                        <span className="text-xs text-muted-foreground">
+                          {track.bpm} BPM
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Separator when tracks available */}
+        {tracks.length > 0 && (
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+        )}
+
+        {/* File upload */}
         <input
           ref={fileInputRef}
           type="file"
@@ -66,7 +126,7 @@ const MusicPanel = ({
           disabled={isAnalyzing}
         >
           <Upload className="w-4 h-4 mr-2" />
-          {isAnalyzing ? "Analyzing..." : fileName ? "Change Track" : "Upload Music"}
+          {isAnalyzing ? "Analyzing..." : fileName ? "Change Track" : "Upload Your Own"}
         </Button>
 
         <AnimatePresence>
