@@ -161,27 +161,27 @@ export const useRuedaCaller = () => {
     }
   }, [bpmDetector.audioLoaded, bpmDetector.bpm]);
 
+  // Track previous audio playing state to detect transitions
+  const wasAudioPlayingRef = useRef(false);
+
   // Unified caller lifecycle: tie to actual audio playing state
   // Start caller when music starts, stop when music stops/pauses/ends
   useEffect(() => {
-    if (!syncToMusic) return;
+    const wasPlaying = wasAudioPlayingRef.current;
+    const nowPlaying = bpmDetector.isPlaying;
     
-    if (bpmDetector.isPlaying && !isPlaying) {
-      // Audio started playing - start the caller
-      startCallingRef.current();
-    } else if (!bpmDetector.isPlaying && isPlaying) {
-      // Audio stopped/paused/ended - stop the caller immediately
+    // Update ref for next render
+    wasAudioPlayingRef.current = nowPlaying;
+    
+    // Only react to actual transitions, not every render
+    if (wasPlaying && !nowPlaying && isPlaying) {
+      // Audio just stopped/paused/ended - stop the caller
       stopCallingRef.current();
+    } else if (!wasPlaying && nowPlaying && syncToMusic && !isPlaying) {
+      // Audio just started playing with sync enabled - start the caller
+      startCallingRef.current();
     }
   }, [bpmDetector.isPlaying, syncToMusic, isPlaying]);
-
-  // Also stop the caller when audio ends even if sync is disabled
-  useEffect(() => {
-    if (!bpmDetector.isPlaying && isPlaying && bpmDetector.audioLoaded) {
-      // Audio ended - stop the caller
-      stopCallingRef.current();
-    }
-  }, [bpmDetector.isPlaying, isPlaying, bpmDetector.audioLoaded]);
 
   // Cleanup on unmount
   useEffect(() => {
