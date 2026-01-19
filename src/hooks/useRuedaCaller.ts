@@ -175,6 +175,14 @@ export const useRuedaCaller = () => {
     }
   }, [bpmDetector.isPlaying, syncToMusic, isPlaying]);
 
+  // Also stop the caller when audio ends even if sync is disabled
+  useEffect(() => {
+    if (!bpmDetector.isPlaying && isPlaying && bpmDetector.audioLoaded) {
+      // Audio ended - stop the caller
+      stopCallingRef.current();
+    }
+  }, [bpmDetector.isPlaying, isPlaying, bpmDetector.audioLoaded]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
