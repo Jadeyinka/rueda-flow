@@ -9,12 +9,24 @@ export interface SalsaTrack {
 // Pre-loaded salsa tracks stored in Lovable Cloud Storage
 // To add tracks: upload audio files to the 'tracks' bucket and add entries here
 export const SALSA_TRACKS: SalsaTrack[] = [
-  // Placeholder entries - replace storagePath with actual uploaded file paths
-  // { 
-  //   id: 'classic-rueda', 
-  //   name: 'Classic Rueda', 
-  //   artist: 'Salsa Band',
-  //   storagePath: 'classic-rueda.mp3', 
-  //   bpm: 180 
-  // },
+  { 
+    id: 'salsa-clasica', 
+    name: 'Salsa Clásica', 
+    storagePath: 'salsa-clasica.mp3',
+  },
+  { 
+    id: 'timba-cubana', 
+    name: 'Timba Cubana', 
+    storagePath: 'timba-cubana.mp3',
+  },
+  { 
+    id: 'rueda-tradicional', 
+    name: 'Rueda Tradicional', 
+    storagePath: 'rueda-tradicional.mp3',
+  },
+  { 
+    id: 'casino-mix', 
+    name: 'Casino Mix', 
+    storagePath: 'casino-mix.mp3',
+  },
 ];
