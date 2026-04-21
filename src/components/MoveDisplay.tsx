@@ -12,9 +12,6 @@ interface MoveDisplayProps {
 const MoveDisplay = ({ currentMove, isPlaying, onOpenTutorial }: MoveDisplayProps) => {
   return (
     <div className="relative flex flex-col items-center justify-center min-h-[200px] md:min-h-[280px] py-4">
-      {/* Background glow effect */}
-      <div className="absolute inset-0 radial-glow opacity-60" />
-      
       <AnimatePresence mode="wait">
         {currentMove ? (
           <motion.div
@@ -25,7 +22,7 @@ const MoveDisplay = ({ currentMove, isPlaying, onOpenTutorial }: MoveDisplayProp
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="text-center z-10 px-4"
           >
-            <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-wider font-display bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent mb-3">
+            <h2 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-wider font-display text-foreground mb-3">
               {currentMove.name}
             </h2>
             {currentMove.description && (
