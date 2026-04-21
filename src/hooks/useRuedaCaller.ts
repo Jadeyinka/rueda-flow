@@ -14,8 +14,8 @@ export const useRuedaCaller = () => {
   const [progress, setProgress] = useState(0);
   const [syncToMusic, setSyncToMusic] = useState(false);
   
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const progressRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const progressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // Refs to avoid stale closures in effects
   const startCallingRef = useRef<() => void>(() => {});
