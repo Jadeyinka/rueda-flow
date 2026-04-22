@@ -63,7 +63,7 @@ const Index = () => {
   const effectiveTempo = syncToMusic && bpmDetector.bpm ? getEffectiveTempo() : tempo;
 
   return (
-    <div className="h-screen bg-background overflow-hidden flex flex-col">
+    <div className="min-h-screen lg:h-screen bg-background overflow-x-hidden lg:overflow-hidden flex flex-col">
       {/* Subtle background glows */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
@@ -74,32 +74,15 @@ const Index = () => {
         {/* Top nav */}
         <Header />
 
-        {/* Main content — 3-column grid, fills remaining height */}
-        <div className="flex-1 container mx-auto px-4 pb-4 overflow-hidden">
-          <div className="h-full flex flex-col lg:grid lg:grid-cols-[320px_1fr_320px] gap-4 lg:gap-6 items-start">
+        {/* Main content — single column on mobile, 3-column grid on desktop */}
+        <div className="flex-1 container mx-auto px-4 pb-8 lg:pb-4 lg:overflow-hidden">
+          <div className="flex flex-col gap-4 lg:h-full lg:grid lg:grid-cols-[320px_1fr_320px] lg:gap-6 lg:items-start">
 
-            {/* ── LEFT: Moves list ── */}
-            <motion.div
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="w-full lg:order-1 lg:h-full lg:overflow-y-auto lg:scrollbar-thin"
-            >
-              <MovesList
-                moves={allMoves}
-                selectedMoves={selectedMoves}
-                onToggleMove={toggleMove}
-                onSelectAll={selectAllMoves}
-                onSelectNone={selectNoMoves}
-                onOpenTutorial={handleOpenTutorial}
-              />
-            </motion.div>
-
-            {/* ── CENTRE: Caller ── */}
+            {/* ── 1st on mobile: Caller ── (centre column on desktop) */}
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.15 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
               className="w-full lg:order-2 flex flex-col items-center lg:h-full lg:overflow-y-auto lg:scrollbar-thin"
             >
               {/* Ring + Move display */}
@@ -126,7 +109,7 @@ const Index = () => {
                 </motion.div>
               )}
 
-              {/* Controls + interval */}
+              {/* Controls */}
               <div className="w-full max-w-md mt-4">
                 <ControlPanel
                   isPlaying={isPlaying}
@@ -140,14 +123,13 @@ const Index = () => {
               </div>
             </motion.div>
 
-            {/* ── RIGHT: Music + Session + Voice ── */}
+            {/* ── 2nd on mobile: Music + Session + Voice ── (right column on desktop) */}
             <motion.div
               initial={{ opacity: 0, x: 16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
               className="w-full lg:order-3 lg:h-full lg:overflow-y-auto lg:scrollbar-thin space-y-4"
             >
-              {/* Music panel */}
               <MusicPanel
                 bpm={bpmDetector.bpm}
                 isPlaying={bpmDetector.isPlaying}
@@ -170,12 +152,12 @@ const Index = () => {
                 <h3 className="font-display text-lg tracking-widest text-foreground uppercase mb-4">
                   Session
                 </h3>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-4 lg:grid-cols-2 gap-3">
                   {[
-                    { value: selectedMoves.size,   label: "Active Moves", color: "text-primary" },
-                    { value: `${effectiveTempo.toFixed(0)}s`, label: syncToMusic && bpmDetector.bpm ? "Beat Sync" : "Interval", color: "text-secondary" },
-                    { value: callCount,             label: "Called",       color: "text-primary" },
-                    { value: bpmDetector.bpm ?? "—", label: "BPM",         color: "text-green-400" },
+                    { value: selectedMoves.size,              label: "Moves",    color: "text-primary" },
+                    { value: `${effectiveTempo.toFixed(0)}s`, label: "Interval", color: "text-secondary" },
+                    { value: callCount,                       label: "Called",   color: "text-primary" },
+                    { value: bpmDetector.bpm ?? "—",          label: "BPM",      color: "text-green-400" },
                   ].map(({ value, label, color }) => (
                     <div key={label} className="text-center p-3 rounded-xl bg-muted/40">
                       <p className={`text-2xl font-display ${color}`}>{value}</p>
@@ -219,6 +201,24 @@ const Index = () => {
                 </div>
               )}
             </motion.div>
+
+            {/* ── 3rd on mobile: Moves list ── (left column on desktop) */}
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="w-full lg:order-1 lg:h-full lg:overflow-y-auto lg:scrollbar-thin"
+            >
+              <MovesList
+                moves={allMoves}
+                selectedMoves={selectedMoves}
+                onToggleMove={toggleMove}
+                onSelectAll={selectAllMoves}
+                onSelectNone={selectNoMoves}
+                onOpenTutorial={handleOpenTutorial}
+              />
+            </motion.div>
+
           </div>
         </div>
 
