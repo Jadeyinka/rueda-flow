@@ -13,6 +13,7 @@ export const useRuedaCaller = () => {
   );
   const [progress, setProgress] = useState(0);
   const [syncToMusic, setSyncToMusic] = useState(false);
+  const [callCount, setCallCount] = useState(0);
   
   const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const progressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -52,6 +53,7 @@ export const useRuedaCaller = () => {
     setCurrentMove(move);
     speakMove(move);
     setProgress(0);
+    setCallCount(prev => prev + 1);
   }, [getActiveMoves, speakMove]);
 
   const startCalling = useCallback(() => {
@@ -234,5 +236,7 @@ export const useRuedaCaller = () => {
     voices,
     selectedVoice,
     setSelectedVoice,
+    // Session
+    callCount,
   };
 };

@@ -3,17 +3,15 @@ import { motion } from "framer-motion";
 const Header = () => {
   return (
     <motion.header
-      initial={{ opacity: 0, y: -20 }}
+      initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="text-center py-8"
+      transition={{ duration: 0.4 }}
+      className="flex items-center px-6 py-4 mb-2"
     >
-      <h1 className="font-display text-4xl md:text-6xl tracking-wider text-foreground">
-        RuedaFlow
-      </h1>
-      <p className="text-muted-foreground mt-2 text-lg">
-        Your Virtual Rueda de Casino Caller
-      </p>
+      {/* Logo */}
+      <span className="font-display text-2xl tracking-widest">
+        RUEDA <span className="text-primary">FLOW</span>
+      </span>
     </motion.header>
   );
 };

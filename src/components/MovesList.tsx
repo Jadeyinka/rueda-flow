@@ -1,6 +1,5 @@
 import { RuedaMove } from "@/data/ruedaMoves";
-import { Check, BookOpen } from "lucide-react";
-import { motion } from "framer-motion";
+import { BookOpen } from "lucide-react";
 
 interface MovesListProps {
   moves: RuedaMove[];
@@ -11,6 +10,14 @@ interface MovesListProps {
   onOpenTutorial: (move: RuedaMove) => void;
 }
 
+const difficultyConfig = {
+  beginner:     { dot: "bg-green-400",  label: "Beginner",     ring: "ring-green-400/40" },
+  intermediate: { dot: "bg-secondary",  label: "Intermediate", ring: "ring-secondary/40" },
+  advanced:     { dot: "bg-primary",    label: "Advanced",     ring: "ring-primary/40"   },
+};
+
+type Difficulty = keyof typeof difficultyConfig;
+
 const MovesList = ({
   moves,
   selectedMoves,
@@ -19,128 +26,84 @@ const MovesList = ({
   onSelectNone,
   onOpenTutorial,
 }: MovesListProps) => {
-  const beginnerMoves = moves.filter(m => m.difficulty === 'beginner');
-  const intermediateMoves = moves.filter(m => m.difficulty === 'intermediate');
-  const advancedMoves = moves.filter(m => m.difficulty === 'advanced');
+  const groups: Difficulty[] = ["beginner", "intermediate", "advanced"];
+
+  const allSelected  = moves.length > 0 && selectedMoves.size === moves.length;
+  const noneSelected = selectedMoves.size === 0;
 
   return (
-    <div className="glass-card rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-display text-2xl tracking-wider text-foreground">
-          Moves ({selectedMoves.size}/{moves.length})
-        </h3>
-        <div className="flex gap-2">
+    <div className="glass-card rounded-2xl p-4 flex flex-col gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-lg tracking-widest text-foreground uppercase">Moves</h3>
+        <div className="flex gap-3">
           <button
             onClick={onSelectAll}
-            className="text-xs text-primary hover:text-primary/80 transition-colors uppercase tracking-wider"
+            className={`text-xs uppercase tracking-wider transition-colors ${
+              allSelected
+                ? "text-secondary font-semibold"
+                : "text-muted-foreground hover:text-secondary"
+            }`}
           >
             All
           </button>
-          <span className="text-muted-foreground">/</span>
           <button
             onClick={onSelectNone}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider"
+            className={`text-xs uppercase tracking-wider transition-colors ${
+              noneSelected
+                ? "text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
           >
             None
           </button>
         </div>
       </div>
 
-      <div className="space-y-6 h-[400px] lg:h-[500px] overflow-y-auto scrollbar-thin">
-        <MoveCategory
-          title="Beginner"
-          moves={beginnerMoves}
-          selectedMoves={selectedMoves}
-          onToggleMove={onToggleMove}
-          onOpenTutorial={onOpenTutorial}
-          color="secondary"
-        />
-        <MoveCategory
-          title="Intermediate"
-          moves={intermediateMoves}
-          selectedMoves={selectedMoves}
-          onToggleMove={onToggleMove}
-          onOpenTutorial={onOpenTutorial}
-          color="primary"
-        />
-        <MoveCategory
-          title="Advanced"
-          moves={advancedMoves}
-          selectedMoves={selectedMoves}
-          onToggleMove={onToggleMove}
-          onOpenTutorial={onOpenTutorial}
-          color="accent"
-        />
-      </div>
-    </div>
-  );
-};
-
-interface MoveCategoryProps {
-  title: string;
-  moves: RuedaMove[];
-  selectedMoves: Set<string>;
-  onToggleMove: (moveName: string) => void;
-  onOpenTutorial: (move: RuedaMove) => void;
-  color: 'primary' | 'secondary' | 'accent';
-}
-
-const MoveCategory = ({ title, moves, selectedMoves, onToggleMove, onOpenTutorial, color }: MoveCategoryProps) => {
-  const colorClasses = {
-    primary: 'bg-primary/10 border-primary/30 text-primary',
-    secondary: 'bg-secondary/10 border-secondary/30 text-secondary',
-    accent: 'bg-accent/10 border-accent/30 text-accent',
-  };
-
-  return (
-    <div>
-      <h4 className={`text-sm font-medium uppercase tracking-wider mb-3 ${
-        color === 'primary' ? 'text-primary' : 
-        color === 'secondary' ? 'text-secondary' : 'text-accent'
-      }`}>
-        {title}
-      </h4>
-      <div className="flex flex-wrap gap-2">
-        {moves.map((move) => {
-          const isSelected = selectedMoves.has(move.name);
-          return (
-            <motion.div
-              key={move.name}
-              className="relative group"
-            >
-              <motion.button
-                onClick={() => onToggleMove(move.name)}
-                whileTap={{ scale: 0.95 }}
-              className={`
-                  relative px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200
-                  border pr-9
-                  ${isSelected 
-                    ? colorClasses[color]
-                    : 'bg-muted/50 border-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
-                  }
-                `}
-              >
-                {move.name}
-                {isSelected && (
-                  <Check className="ml-1 inline-block h-3 w-3" />
-                )}
-              </motion.button>
-              
-              {/* Tutorial button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenTutorial(move);
-                }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-background/50 transition-colors opacity-60 hover:opacity-100"
-                title={`Learn ${move.name}`}
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-              </button>
-            </motion.div>
-          );
-        })}
-      </div>
+      {/* Groups */}
+      {groups.map((diff) => {
+        const group = moves.filter(m => m.difficulty === diff);
+        if (!group.length) return null;
+        const { dot, label } = difficultyConfig[diff];
+        return (
+          <div key={diff}>
+            {/* Group label */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</span>
+            </div>
+            {/* 3-per-row chip grid */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {group.map((move) => {
+                const active = selectedMoves.has(move.name);
+                return (
+                  <div key={move.name} className="relative group">
+                    <button
+                      onClick={() => onToggleMove(move.name)}
+                      className={`w-full text-left px-2 py-1.5 rounded-lg text-xs font-medium transition-all truncate
+                        ${active
+                          ? "bg-muted text-foreground border border-border"
+                          : "bg-transparent text-muted-foreground border border-transparent hover:border-border hover:text-foreground"
+                        }`}
+                    >
+                      {active && <span className="text-primary mr-1">✓</span>}
+                      {move.name}
+                    </button>
+                    {/* Tutorial icon — appears on hover */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onOpenTutorial(move); }}
+                      className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-muted rounded-full p-0.5"
+                      title={`Learn ${move.name}`}
+                    >
+                      <BookOpen className="w-2.5 h-2.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };

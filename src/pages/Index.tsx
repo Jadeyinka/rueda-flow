@@ -44,200 +44,195 @@ const Index = () => {
     voices,
     selectedVoice,
     setSelectedVoice,
+    callCount,
   } = useRuedaCaller();
 
   const [tutorialMove, setTutorialMove] = useState<RuedaMove | null>(null);
   const [selectedTrackId, setSelectedTrackId] = useState<string | undefined>();
 
-  const handleOpenTutorial = (move: RuedaMove) => {
-    setTutorialMove(move);
-  };
+  const handleOpenTutorial = (move: RuedaMove) => setTutorialMove(move);
 
   const handleTrackSelect = useCallback(async (track: SalsaTrack) => {
     setSelectedTrackId(track.id);
-    
-    // Get public URL from storage
-    const { data } = supabase.storage
-      .from('tracks')
-      .getPublicUrl(track.storagePath);
-    
+    const { data } = supabase.storage.from('tracks').getPublicUrl(track.storagePath);
     if (data?.publicUrl) {
       await bpmDetector.loadAudioFromUrl(data.publicUrl, track.bpm);
     }
   }, [bpmDetector]);
 
+  const effectiveTempo = syncToMusic && bpmDetector.bpm ? getEffectiveTempo() : tempo;
+
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Decorative background elements */}
+    <div className="h-screen bg-background overflow-hidden flex flex-col">
+      {/* Subtle background glows */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-48 md:w-96 h-48 md:h-96 bg-primary/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-0 w-40 md:w-80 h-40 md:h-80 bg-accent/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-0 w-32 md:w-64 h-32 md:h-64 bg-secondary/5 rounded-full blur-3xl" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-80 h-80 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 container mx-auto px-3 sm:px-4 pb-8">
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Top nav */}
         <Header />
-        
-        {/* Mobile: Stack vertically, Desktop: 3-column grid */}
-        <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-6 items-start">
-          
-          {/* Center column - Main display (First on mobile) */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-full lg:order-2 lg:col-span-1 flex flex-col items-center"
-          >
-            <div className="relative w-full flex-shrink-0">
-              <ProgressRing progress={progress / 100} isPlaying={isPlaying} />
-              <MoveDisplay 
-                currentMove={currentMove} 
-                isPlaying={isPlaying}
+
+        {/* Main content — 3-column grid, fills remaining height */}
+        <div className="flex-1 container mx-auto px-4 pb-4 overflow-hidden">
+          <div className="h-full flex flex-col lg:grid lg:grid-cols-[320px_1fr_320px] gap-4 lg:gap-6 items-start">
+
+            {/* ── LEFT: Moves list ── */}
+            <motion.div
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="w-full lg:order-1 lg:h-full lg:overflow-y-auto lg:scrollbar-thin"
+            >
+              <MovesList
+                moves={allMoves}
+                selectedMoves={selectedMoves}
+                onToggleMove={toggleMove}
+                onSelectAll={selectAllMoves}
+                onSelectNone={selectNoMoves}
                 onOpenTutorial={handleOpenTutorial}
               />
-            </div>
-            
-            {/* Audio Visualizer */}
-            {bpmDetector.isPlaying && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-md mt-4"
-              >
-                <AudioVisualizer
-                  getAnalyserData={bpmDetector.getAnalyserData}
-                  isPlaying={bpmDetector.isPlaying}
+            </motion.div>
+
+            {/* ── CENTRE: Caller ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.15 }}
+              className="w-full lg:order-2 flex flex-col items-center lg:h-full lg:overflow-y-auto lg:scrollbar-thin"
+            >
+              {/* Ring + Move display */}
+              <div className="relative w-full flex-shrink-0">
+                <ProgressRing progress={progress / 100} isPlaying={isPlaying} />
+                <MoveDisplay
+                  currentMove={currentMove}
+                  isPlaying={isPlaying}
+                  onOpenTutorial={handleOpenTutorial}
                 />
-              </motion.div>
-            )}
-            
-            <div className="w-full max-w-md mt-4 sm:mt-8">
-              <ControlPanel
-                isPlaying={isPlaying}
-                tempo={syncToMusic && bpmDetector.bpm ? getEffectiveTempo() : tempo}
-                isMuted={isMuted}
-                onPlayPause={togglePlayPause}
-                onNext={skipToNext}
-                onTempoChange={(value) => setTempo(value[0])}
-                onMuteToggle={() => setIsMuted(!isMuted)}
-              />
-            </div>
-          </motion.div>
-
-          {/* Music Panel (Second on mobile, Right on desktop) */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="w-full lg:order-3 space-y-4"
-          >
-            <MusicPanel
-              bpm={bpmDetector.bpm}
-              isPlaying={bpmDetector.isPlaying}
-              isAnalyzing={bpmDetector.isAnalyzing}
-              audioLoaded={bpmDetector.audioLoaded}
-              volume={bpmDetector.volume}
-              onFileSelect={bpmDetector.loadAudio}
-              onToggleMusic={bpmDetector.toggleMusic}
-              onBPMChange={bpmDetector.setBPM}
-              onVolumeChange={bpmDetector.setVolume}
-              syncEnabled={syncToMusic}
-              onSyncToggle={() => setSyncToMusic(!syncToMusic)}
-              tracks={SALSA_TRACKS}
-              onTrackSelect={handleTrackSelect}
-              selectedTrackId={selectedTrackId}
-            />
-
-            {/* Session Stats - inline on mobile */}
-            <div className="glass-card rounded-2xl p-4 sm:p-6">
-              <h3 className="font-display text-xl sm:text-2xl tracking-wider text-foreground mb-2">
-                Session Stats
-              </h3>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 mt-3 sm:mt-4">
-                <div className="text-center p-3 sm:p-4 rounded-xl bg-muted/50">
-                  <p className="text-2xl sm:text-3xl font-display text-primary">{selectedMoves.size}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider mt-1">Active Moves</p>
-                </div>
-                <div className="text-center p-3 sm:p-4 rounded-xl bg-muted/50">
-                  <p className="text-2xl sm:text-3xl font-display text-secondary">
-                    {syncToMusic && bpmDetector.bpm
-                      ? `${getEffectiveTempo().toFixed(1)}s`
-                      : `${tempo}s`
-                    }
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider mt-1">
-                    {syncToMusic && bpmDetector.bpm ? "Beat Sync" : "Interval"}
-                  </p>
-                </div>
               </div>
-            </div>
 
-            {/* Caller Voice picker */}
-            {voices.length > 0 && (
-              <div className="glass-card rounded-2xl p-4 sm:p-6">
-                <h3 className="font-display text-xl sm:text-2xl tracking-wider text-foreground mb-1 flex items-center gap-2">
-                  <Mic className="w-4 h-4 text-primary" />
-                  Caller Voice
-                </h3>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Choose the voice that calls your moves
-                </p>
-                <Select
-                  value={selectedVoice?.name ?? ""}
-                  onValueChange={(name) => {
-                    const voice = voices.find(v => v.name === name);
-                    if (voice) setSelectedVoice(voice);
-                  }}
+              {/* Audio visualizer */}
+              {bpmDetector.isPlaying && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full max-w-md mt-3"
                 >
-                  <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder="Select a voice..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover max-h-60">
-                    {voices.map((voice) => (
-                      <SelectItem key={voice.name} value={voice.name}>
-                        <div className="flex items-center justify-between w-full gap-2">
-                          <span>{voice.name}</span>
-                          <span className="text-xs text-muted-foreground">{voice.lang}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <AudioVisualizer
+                    getAnalyserData={bpmDetector.getAnalyserData}
+                    isPlaying={bpmDetector.isPlaying}
+                  />
+                </motion.div>
+              )}
+
+              {/* Controls + interval */}
+              <div className="w-full max-w-md mt-4">
+                <ControlPanel
+                  isPlaying={isPlaying}
+                  tempo={effectiveTempo}
+                  isMuted={isMuted}
+                  onPlayPause={togglePlayPause}
+                  onNext={skipToNext}
+                  onTempoChange={(value) => setTempo(value[0])}
+                  onMuteToggle={() => setIsMuted(!isMuted)}
+                />
               </div>
-            )}
-          </motion.div>
+            </motion.div>
 
-          {/* Moves list (Last on mobile, Left on desktop) */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="w-full lg:order-1"
-          >
-            <MovesList
-              moves={allMoves}
-              selectedMoves={selectedMoves}
-              onToggleMove={toggleMove}
-              onSelectAll={selectAllMoves}
-              onSelectNone={selectNoMoves}
-              onOpenTutorial={handleOpenTutorial}
-            />
-          </motion.div>
+            {/* ── RIGHT: Music + Session + Voice ── */}
+            <motion.div
+              initial={{ opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="w-full lg:order-3 lg:h-full lg:overflow-y-auto lg:scrollbar-thin space-y-4"
+            >
+              {/* Music panel */}
+              <MusicPanel
+                bpm={bpmDetector.bpm}
+                isPlaying={bpmDetector.isPlaying}
+                isAnalyzing={bpmDetector.isAnalyzing}
+                audioLoaded={bpmDetector.audioLoaded}
+                volume={bpmDetector.volume}
+                onFileSelect={bpmDetector.loadAudio}
+                onToggleMusic={bpmDetector.toggleMusic}
+                onBPMChange={bpmDetector.setBPM}
+                onVolumeChange={bpmDetector.setVolume}
+                syncEnabled={syncToMusic}
+                onSyncToggle={() => setSyncToMusic(!syncToMusic)}
+                tracks={SALSA_TRACKS}
+                onTrackSelect={handleTrackSelect}
+                selectedTrackId={selectedTrackId}
+              />
 
+              {/* Session stats */}
+              <div className="glass-card rounded-2xl p-5">
+                <h3 className="font-display text-lg tracking-widest text-foreground uppercase mb-4">
+                  Session
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: selectedMoves.size,   label: "Active Moves", color: "text-primary" },
+                    { value: `${effectiveTempo.toFixed(0)}s`, label: syncToMusic && bpmDetector.bpm ? "Beat Sync" : "Interval", color: "text-secondary" },
+                    { value: callCount,             label: "Called",       color: "text-primary" },
+                    { value: bpmDetector.bpm ?? "—", label: "BPM",         color: "text-green-400" },
+                  ].map(({ value, label, color }) => (
+                    <div key={label} className="text-center p-3 rounded-xl bg-muted/40">
+                      <p className={`text-2xl font-display ${color}`}>{value}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Caller voice picker */}
+              {voices.length > 0 && (
+                <div className="glass-card rounded-2xl p-5">
+                  <h3 className="font-display text-lg tracking-widest text-foreground uppercase mb-1 flex items-center gap-2">
+                    <Mic className="w-4 h-4 text-primary" />
+                    Caller Voice
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Choose the voice that calls your moves
+                  </p>
+                  <Select
+                    value={selectedVoice?.name ?? ""}
+                    onValueChange={(name) => {
+                      const voice = voices.find(v => v.name === name);
+                      if (voice) setSelectedVoice(voice);
+                    }}
+                  >
+                    <SelectTrigger className="w-full bg-background">
+                      <SelectValue placeholder="Select a voice..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover max-h-60">
+                      {voices.map((voice) => (
+                        <SelectItem key={voice.name} value={voice.name}>
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span>{voice.name}</span>
+                            <span className="text-xs text-muted-foreground">{voice.lang}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </motion.div>
+          </div>
         </div>
 
         {/* Footer */}
         <motion.footer
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-center mt-12 text-muted-foreground text-sm"
+          transition={{ delay: 0.5 }}
+          className="text-center py-2 text-muted-foreground text-xs shrink-0"
         >
-          <p>¡Que siga la Rueda! 💃🕺</p>
+          ¡Que siga la Rueda! 💃🕺
         </motion.footer>
       </div>
 
-      {/* Tutorial Modal */}
       <TutorialModal
         move={tutorialMove}
         isOpen={!!tutorialMove}

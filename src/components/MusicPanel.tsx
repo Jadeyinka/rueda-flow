@@ -1,5 +1,4 @@
-import { Music, Upload, Play, Pause, Gauge, Volume2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload, Play, Pause, Gauge, Volume2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   Select,
@@ -56,178 +55,117 @@ const MusicPanel = ({
     }
   };
 
-  const handleTrackChange = (trackId: string) => {
-    const track = tracks.find(t => t.id === trackId);
-    if (track) {
-      setFileName(null); // Clear custom file name when selecting a track
-      onTrackSelect(track);
-    }
-  };
+  const selectedTrack = tracks.find(t => t.id === selectedTrackId);
+  const displayLabel = fileName ?? selectedTrack?.name ?? undefined;
 
   return (
-    <div className="glass-card rounded-2xl p-6">
-      <h3 className="font-display text-xl tracking-wider text-foreground mb-4 flex items-center gap-2">
-        <Music className="w-5 h-5 text-primary" />
-        Background Music
+    <div className="glass-card rounded-2xl p-5 space-y-4">
+      {/* Section title */}
+      <h3 className="font-display text-lg tracking-widest text-foreground uppercase">
+        Music
       </h3>
 
-      <div className="space-y-4">
-        {/* Pre-loaded track selector */}
-        {tracks.length > 0 && (
-          <div className="space-y-2">
-            <Select
-              value={selectedTrackId || ""}
-              onValueChange={handleTrackChange}
-              disabled={isAnalyzing}
-            >
-              <SelectTrigger className="w-full bg-background">
-                <SelectValue placeholder="Select a salsa track..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover">
-                {tracks.map((track) => (
-                  <SelectItem key={track.id} value={track.id}>
-                    <div className="flex items-center justify-between w-full gap-2">
-                      <span>{track.name}</span>
-                      {track.bpm && (
-                        <span className="text-xs text-muted-foreground">
-                          {track.bpm} BPM
-                        </span>
-                      )}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+      {/* Track selector dropdown */}
+      <Select
+        value={selectedTrackId ?? ""}
+        onValueChange={(id) => {
+          const track = tracks.find(t => t.id === id);
+          if (track && !isAnalyzing) onTrackSelect(track);
+        }}
+        disabled={isAnalyzing}
+      >
+        <SelectTrigger className="w-full bg-background">
+          <SelectValue placeholder="Choose a track…">
+            {displayLabel}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="bg-popover">
+          {tracks.map((track) => (
+            <SelectItem key={track.id} value={track.id}>
+              <div className="flex items-center justify-between w-full gap-4">
+                <span>{track.name}</span>
+                {track.bpm && (
+                  <span className="text-xs text-muted-foreground">{track.bpm} BPM</span>
+                )}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        {/* Separator when tracks available */}
-        {tracks.length > 0 && (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-xs text-muted-foreground">or</span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-        )}
+      {/* Upload button */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.wma,.aiff,.opus,.webm"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isAnalyzing}
+        className="flex items-center gap-2 w-full px-3 py-2 rounded-xl border border-dashed border-border hover:border-primary/50 hover:text-primary transition-colors text-muted-foreground text-sm"
+      >
+        <Upload className="w-4 h-4" />
+        {isAnalyzing ? "Analyzing…" : "Upload your music"}
+      </button>
 
-        {/* File upload */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.wma,.aiff,.opus,.webm"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-        
-        <Button
-          variant="outline"
-          onClick={() => fileInputRef.current?.click()}
-          className="w-full border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5"
-          disabled={isAnalyzing}
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          {isAnalyzing ? "Analyzing..." : fileName ? "Change Track" : "Upload Your Own"}
-        </Button>
-
-        <AnimatePresence>
-          {fileName && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="text-xs text-muted-foreground truncate"
-            >
-              🎵 {fileName}
-            </motion.p>
-          )}
-        </AnimatePresence>
-
-        {/* Music controls */}
+      {/* Controls — shown when audio is loaded */}
+      <AnimatePresence>
         {audioLoaded && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
+            exit={{ opacity: 0, y: 6 }}
+            className="space-y-3"
           >
-            <Button
-              onClick={onToggleMusic}
-              className={`w-full ${isPlaying ? 'bg-secondary hover:bg-secondary/90' : 'bg-primary hover:bg-primary/90'}`}
-            >
-              {isPlaying ? (
-                <>
-                  <Pause className="w-4 h-4 mr-2" fill="currentColor" />
-                  Pause Music
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 mr-2" fill="currentColor" />
-                  Play Music
-                </>
-              )}
-            </Button>
-
-            {/* Volume control */}
+            {/* Volume */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Volume2 className="w-4 h-4" />
-                  Music Volume
+                <span className="text-xs text-muted-foreground flex items-center gap-1 uppercase tracking-wide">
+                  <Volume2 className="w-3.5 h-3.5" /> Volume
                 </span>
-                <span className="text-sm text-primary font-medium">{Math.round(volume * 100)}%</span>
+                <span className="text-xs text-primary font-medium">{Math.round(volume * 100)}%</span>
               </div>
-              <Slider
-                value={[volume]}
-                onValueChange={(value) => onVolumeChange(value[0])}
-                min={0}
-                max={1}
-                step={0.05}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground text-center">
-                Lower volume to hear voice calls clearly
-              </p>
+              <Slider value={[volume]} onValueChange={(v) => onVolumeChange(v[0])} min={0} max={1} step={0.05} className="w-full" />
             </div>
+
+            {/* Play / Pause music */}
+            <button
+              onClick={onToggleMusic}
+              className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium transition-colors
+                ${isPlaying ? "bg-secondary/20 text-secondary hover:bg-secondary/30" : "bg-primary/20 text-primary hover:bg-primary/30"}`}
+            >
+              {isPlaying
+                ? <><Pause className="w-4 h-4" fill="currentColor" /> Pause Music</>
+                : <><Play className="w-4 h-4" fill="currentColor" /> Play Music</>}
+            </button>
           </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* BPM Display and Control */}
+      {/* BPM controls */}
+      <AnimatePresence>
         {bpm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="space-y-3 pt-2"
+            className="space-y-3 pt-1 border-t border-border"
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground flex items-center gap-1">
-                <Gauge className="w-4 h-4" />
-                Detected BPM
+              <span className="text-xs text-muted-foreground flex items-center gap-1 uppercase tracking-wide">
+                <Gauge className="w-3.5 h-3.5" /> BPM
               </span>
-              <span className="font-display text-2xl text-primary">{bpm}</span>
+              <span className="font-display text-xl text-primary">{bpm}</span>
             </div>
-
-            <Slider
-              value={[bpm]}
-              onValueChange={(value) => onBPMChange(value[0])}
-              min={100}
-              max={240}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Slow (100)</span>
-              <span>Fast (240)</span>
-            </div>
-
-            {/* Sync toggle */}
-            <Button
-              variant={syncEnabled ? "default" : "outline"}
-              size="sm"
+            <Slider value={[bpm]} onValueChange={(v) => onBPMChange(v[0])} min={100} max={240} step={1} className="w-full" />
+            <button
               onClick={onSyncToggle}
-              className="w-full mt-2"
+              className={`w-full py-2 rounded-xl text-xs font-semibold uppercase tracking-wider transition-colors
+                ${syncEnabled ? "bg-primary text-white" : "border border-border text-muted-foreground hover:text-foreground"}`}
             >
               {syncEnabled ? "✓ Syncing to Beat" : "Sync Calls to Beat"}
-            </Button>
-            
+            </button>
             {syncEnabled && (
               <p className="text-xs text-center text-muted-foreground">
                 Calls every 8 beats ({((60 / bpm) * 8).toFixed(1)}s)
@@ -235,13 +173,7 @@ const MusicPanel = ({
             )}
           </motion.div>
         )}
-
-        {!audioLoaded && !isAnalyzing && (
-          <p className="text-xs text-center text-muted-foreground">
-            Upload a salsa track to auto-detect BPM
-          </p>
-        )}
-      </div>
+      </AnimatePresence>
     </div>
   );
 };
