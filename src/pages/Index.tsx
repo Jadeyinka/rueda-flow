@@ -9,6 +9,14 @@ import MusicPanel from "@/components/MusicPanel";
 import AudioVisualizer from "@/components/AudioVisualizer";
 import TutorialModal from "@/components/TutorialModal";
 import { useRuedaCaller } from "@/hooks/useRuedaCaller";
+import { Mic } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RuedaMove } from "@/data/ruedaMoves";
 import { SALSA_TRACKS, SalsaTrack } from "@/data/salsaTracks";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +41,9 @@ const Index = () => {
     syncToMusic,
     setSyncToMusic,
     getEffectiveTempo,
+    voices,
+    selectedVoice,
+    setSelectedVoice,
   } = useRuedaCaller();
 
   const [tutorialMove, setTutorialMove] = useState<RuedaMove | null>(null);
@@ -149,7 +160,7 @@ const Index = () => {
                 </div>
                 <div className="text-center p-3 sm:p-4 rounded-xl bg-muted/50">
                   <p className="text-2xl sm:text-3xl font-display text-secondary">
-                    {syncToMusic && bpmDetector.bpm 
+                    {syncToMusic && bpmDetector.bpm
                       ? `${getEffectiveTempo().toFixed(1)}s`
                       : `${tempo}s`
                     }
@@ -160,6 +171,40 @@ const Index = () => {
                 </div>
               </div>
             </div>
+
+            {/* Caller Voice picker */}
+            {voices.length > 0 && (
+              <div className="glass-card rounded-2xl p-4 sm:p-6">
+                <h3 className="font-display text-xl sm:text-2xl tracking-wider text-foreground mb-1 flex items-center gap-2">
+                  <Mic className="w-4 h-4 text-primary" />
+                  Caller Voice
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Choose the voice that calls your moves
+                </p>
+                <Select
+                  value={selectedVoice?.name ?? ""}
+                  onValueChange={(name) => {
+                    const voice = voices.find(v => v.name === name);
+                    if (voice) setSelectedVoice(voice);
+                  }}
+                >
+                  <SelectTrigger className="w-full bg-background">
+                    <SelectValue placeholder="Select a voice..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover max-h-60">
+                    {voices.map((voice) => (
+                      <SelectItem key={voice.name} value={voice.name}>
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span>{voice.name}</span>
+                          <span className="text-xs text-muted-foreground">{voice.lang}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </motion.div>
 
           {/* Moves list (Last on mobile, Left on desktop) */}

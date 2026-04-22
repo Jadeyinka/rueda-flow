@@ -22,7 +22,7 @@ export const useRuedaCaller = () => {
   const stopCallingRef = useRef<() => void>(() => {});
 
   // Use smooth voice hook
-  const { speak, stop: stopSpeech } = useSmoothVoice();
+  const { speak, stop: stopSpeech, voices, selectedVoice, setSelectedVoice } = useSmoothVoice();
   
   // Use BPM detector hook
   const bpmDetector = useBPMDetector();
@@ -56,25 +56,11 @@ export const useRuedaCaller = () => {
 
   const startCalling = useCallback(() => {
     if (getActiveMoves().length === 0) return;
-    
-    setIsPlaying(true);
+    // Only call the first move and flip the playing flag.
+    // The useEffect below is the single owner of interval creation.
     callNextMove();
-    
-    const effectiveTempo = getEffectiveTempo();
-    
-    // Set up interval for next moves
-    intervalRef.current = setInterval(() => {
-      callNextMove();
-    }, effectiveTempo * 1000);
-
-    // Set up progress updates
-    progressRef.current = setInterval(() => {
-      setProgress(prev => {
-        const increment = 100 / (effectiveTempo * 10);
-        return Math.min(prev + increment, 100);
-      });
-    }, 100);
-  }, [getEffectiveTempo, callNextMove, getActiveMoves]);
+    setIsPlaying(true);
+  }, [callNextMove, getActiveMoves]);
 
   const stopCalling = useCallback(() => {
     setIsPlaying(false);
@@ -192,25 +178,36 @@ export const useRuedaCaller = () => {
     };
   }, [stopSpeech]);
 
-  // Restart interval when tempo or sync changes while playing
+  // Single source of truth for interval management.
+  // Creates intervals when playing, and the cleanup function guarantees
+  // they are always destroyed when isPlaying goes false or any dep changes.
   useEffect(() => {
-    if (isPlaying) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (progressRef.current) clearInterval(progressRef.current);
-      
-      const effectiveTempo = getEffectiveTempo();
-      
-      intervalRef.current = setInterval(() => {
-        callNextMove();
-      }, effectiveTempo * 1000);
+    if (!isPlaying) return;
 
-      progressRef.current = setInterval(() => {
-        setProgress(prev => {
-          const increment = 100 / (effectiveTempo * 10);
-          return Math.min(prev + increment, 100);
-        });
-      }, 100);
-    }
+    const effectiveTempo = getEffectiveTempo();
+
+    intervalRef.current = setInterval(() => {
+      callNextMove();
+    }, effectiveTempo * 1000);
+
+    progressRef.current = setInterval(() => {
+      setProgress(prev => {
+        const increment = 100 / (effectiveTempo * 10);
+        return Math.min(prev + increment, 100);
+      });
+    }, 100);
+
+    // Cleanup runs when isPlaying → false, or when tempo/sync changes mid-session
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (progressRef.current) {
+        clearInterval(progressRef.current);
+        progressRef.current = null;
+      }
+    };
   }, [tempo, syncToMusic, bpmDetector.bpm, isPlaying, callNextMove, getEffectiveTempo]);
 
   return {
@@ -233,5 +230,9 @@ export const useRuedaCaller = () => {
     syncToMusic,
     setSyncToMusic,
     getEffectiveTempo,
+    // Voice features
+    voices,
+    selectedVoice,
+    setSelectedVoice,
   };
 };

@@ -29,7 +29,7 @@ const ProgressRing = ({ progress, isPlaying }: ProgressRingProps) => {
             cy="50%"
             r="45%"
             fill="none"
-            stroke="url(#gradient)"
+            stroke="hsl(var(--primary))"
             strokeWidth="3"
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -39,12 +39,6 @@ const ProgressRing = ({ progress, isPlaying }: ProgressRingProps) => {
             transition={{ duration: 0.1, ease: "linear" }}
           />
         )}
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(var(--primary))" />
-            <stop offset="100%" stopColor="hsl(var(--accent))" />
-          </linearGradient>
-        </defs>
       </svg>
     </div>
   );

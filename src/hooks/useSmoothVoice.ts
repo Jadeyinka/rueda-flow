@@ -10,41 +10,55 @@ export const useSmoothVoice = () => {
     const loadVoices = () => {
       const availableVoices = window.speechSynthesis?.getVoices() || [];
       setVoices(availableVoices);
-      
-      // Prioritize Spanish/Cuban voices for authentic Rueda calls
-      // Order: Cuban Spanish > Latin American Spanish > Spain Spanish > Other Spanish
-      const spanishVoices = availableVoices.filter(v => v.lang.startsWith('es'));
-      
-      // Prefer Latin American Spanish variants (closer to Cuban accent)
-      const latinAmericanVoices = spanishVoices.filter(v => 
-        v.lang.includes('MX') || // Mexico
-        v.lang.includes('CU') || // Cuba
-        v.lang.includes('CO') || // Colombia
-        v.lang.includes('AR') || // Argentina
-        v.lang.includes('VE') || // Venezuela
-        v.lang.includes('419')   // Latin America generic
-      );
-      
-      // Prefer natural/neural voices for smoother sound
-      const naturalVoices = spanishVoices.filter(v =>
-        v.name.toLowerCase().includes('natural') ||
-        v.name.toLowerCase().includes('neural') ||
-        v.name.toLowerCase().includes('premium') ||
-        v.name.includes('Google') ||
-        v.name.includes('Microsoft')
-      );
 
-      // Pick the best available Spanish voice
-      const bestVoice = latinAmericanVoices[0] || naturalVoices[0] || spanishVoices[0] || availableVoices[0] || null;
+      const spanishVoices = availableVoices.filter(v => v.lang.startsWith('es'));
+
+      // The browser doesn't expose gender directly, so we match against known
+      // male Spanish voice names across Mac, Windows, and Google voices.
+      const MALE_NAMES = [
+        'jorge', 'diego', 'pablo', 'raul', 'raúl', 'carlos', 'juan',
+        'miguel', 'andrés', 'andres', 'javier', 'ricardo', 'rodrigo',
+        'enrique', 'antonio', 'alejandro', 'luca', 'felix', 'félix',
+        'angel', 'ángel', 'sergio', 'daniel', 'marco', 'alberto',
+      ];
+
+      const isMale = (v: SpeechSynthesisVoice) => {
+        const name = v.name.toLowerCase();
+        return MALE_NAMES.some(n => name.includes(n));
+      };
+
+      const isLatinAm = (v: SpeechSynthesisVoice) =>
+        v.lang.includes('MX') || v.lang.includes('CU') || v.lang.includes('CO') ||
+        v.lang.includes('AR') || v.lang.includes('VE') || v.lang.includes('419') ||
+        v.lang.includes('US');
+
+      const isPremium = (v: SpeechSynthesisVoice) => {
+        const name = v.name.toLowerCase();
+        return name.includes('neural') || name.includes('natural') ||
+               name.includes('premium') || v.name.includes('Google') ||
+               v.name.includes('Microsoft');
+      };
+
+      // Selection priority: male first, then quality, then region
+      const bestVoice =
+        spanishVoices.find(v => isMale(v) && isLatinAm(v) && isPremium(v)) ||
+        spanishVoices.find(v => isMale(v) && isLatinAm(v))                 ||
+        spanishVoices.find(v => isMale(v) && isPremium(v))                 ||
+        spanishVoices.find(v => isMale(v))                                 ||
+        spanishVoices.find(v => isLatinAm(v) && isPremium(v))             ||
+        spanishVoices.find(v => isLatinAm(v))                             ||
+        spanishVoices[0]                                                   ||
+        null;
+
       setSelectedVoice(bestVoice);
-      
+
       console.log('Available Spanish voices:', spanishVoices.map(v => `${v.name} (${v.lang})`));
       console.log('Selected voice:', bestVoice?.name, bestVoice?.lang);
     };
 
     loadVoices();
-    
-    // Voices may load asynchronously
+
+    // Voices may load asynchronously on some browsers
     if (window.speechSynthesis) {
       window.speechSynthesis.onvoiceschanged = loadVoices;
     }
@@ -63,13 +77,16 @@ export const useSmoothVoice = () => {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    
-    // Apply natural Cuban/Spanish voice settings
-    // Slightly slower rate for clarity, natural pitch, LOUD volume
-    utterance.rate = options?.rate ?? 0.9; // Natural speaking pace
-    utterance.pitch = options?.pitch ?? 1.1; // Slightly higher for energy
-    utterance.volume = options?.volume ?? 1.0; // Maximum volume
-    
+
+    // Setting lang is the most important line — it tells the speech engine
+    // to pronounce words using Spanish phonetics. This helps even when the
+    // system has no dedicated Spanish voice installed.
+    utterance.lang = selectedVoice?.lang ?? 'es-MX';
+
+    utterance.rate = options?.rate ?? 0.9;
+    utterance.pitch = options?.pitch ?? 0.85; // Lower = deeper, more authoritative caller voice
+    utterance.volume = options?.volume ?? 1.0;
+
     if (selectedVoice) {
       utterance.voice = selectedVoice;
     }

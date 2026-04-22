@@ -40,8 +40,7 @@ const ControlPanel = ({
 
         <Button
           onClick={onPlayPause}
-          className="h-20 w-20 rounded-full bg-gradient-to-br from-primary to-accent hover:opacity-90 transition-all duration-300 shadow-lg"
-          style={{ boxShadow: 'var(--glow-primary)' }}
+          className="h-20 w-20 rounded-full bg-primary hover:brightness-90 transition-all duration-300"
         >
           {isPlaying ? (
             <Pause className="h-8 w-8 text-primary-foreground" fill="currentColor" />

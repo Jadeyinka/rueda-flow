@@ -1,52 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
-
 @layer base {
   :root {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
+    /* ── Warm Latin Dusk — Direction B ── */
 
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 98%;
+    --background: 20 24% 5%;        /* #100C0A — near-black with warm undertone */
+    --foreground: 30 15% 96%;       /* #F5F1EE — warm white, easier on the eyes */
 
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
+    --card: 20 30% 8%;              /* #1A120E — dark warm card surface */
+    --card-foreground: 30 15% 96%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 10%;
+    --popover: 20 30% 8%;
+    --popover-foreground: 30 15% 96%;
 
-    --secondary: 0 0% 65%;
-    --secondary-foreground: 0 0% 10%;
+    --primary: 10 79% 57%;          /* #E8563A — coral red, main accent */
+    --primary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --secondary: 27 87% 67%;        /* #F4A261 — amber, supporting accent */
+    --secondary-foreground: 20 24% 5%;
 
-    --accent: 0 0% 80%;
-    --accent-foreground: 0 0% 10%;
+    --muted: 13 34% 10%;            /* #231511 — dark warm surface for muted areas */
+    --muted-foreground: 18 11% 55%; /* #9A8880 — readable warm grey */
+
+    --accent: 27 87% 67%;           /* #F4A261 — amber (same as secondary) */
+    --accent-foreground: 20 24% 5%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 0 0% 98%;
+    --border: 21 31% 13%;           /* #2A1D16 — warm dark border */
+    --input: 21 31% 13%;
+    --ring: 10 79% 57%;             /* #E8563A — focus ring matches primary */
 
     --radius: 0.75rem;
 
-    /* Custom RuedaFlow tokens - flat, no gradients */
+    /* Custom RuedaFlow tokens — flat, no gradients */
     --glow-primary: none;
     --glow-accent: none;
-    --gradient-hero: hsl(0 0% 7%);
-    --gradient-card: hsl(0 0% 10%);
+    --gradient-hero: hsl(20 24% 5%);
+    --gradient-card: hsl(20 30% 8%);
     --gradient-radial: transparent;
   }
 
   .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 98%;
+    --background: 20 24% 5%;
+    --foreground: 30 15% 96%;
   }
 }
 
